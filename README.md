@@ -16,6 +16,7 @@ Quill Html Editor is a powerful HTML rich text editor designed for Android, iOS,
 - Supports embedding of images, videos, and insertion of tables.
 - Allows setting and retrieving text in both HTML and Delta formats.
 - Supports integration with **Google Fonts** for a wide range of font options.
+- Provides File after picking Image which user can store to their database.
 
 ## Demo
 
@@ -105,6 +106,11 @@ Define **ToolBar** widget and pass the same **controller** created for **QuillHt
      InkWell(onTap: () {}, child: const Icon(Icons.favorite)),
      InkWell(onTap: () {}, child: const Icon(Icons.add_circle)),
      ],
+     onImagePicked: (imageFile) async {
+        debugPrint('my image path is ${imageFile.path}');
+        final linkToNetworkImage = await uploadImagetoServer(imageFile);
+        return linkToNetworkImage;
+     },
    )
 ```
 
@@ -232,7 +238,7 @@ await controller.insertText(text, index: 10);
 -  **CustomStyleButton** - Let the user add own icons to toolbar styles
 -  **Custom Color** - Let the user add more Colors to the Color Picker
 -  **Custom FontSize** - Let the user add custom font sizes, instead of just Small, Normal, Large & Huge
--  **AsyncImagePickerButton** -  To share picked file to user, to upload it asynchronously and inserts the returned link into the editor
+-  **AsyncImagePickerButton** -  To share picked file to user, to upload it asynchronously and inserts the returned link into the editor - Done
 -  More examples for each available apis
 
 ------------

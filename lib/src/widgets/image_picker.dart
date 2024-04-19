@@ -16,7 +16,7 @@ class ImageSelector {
   final FileType _pickingType = FileType.image;
 
   ///[pickFiles] to pick the files
-  Future<void> pickFiles() async {
+  Future<void> pickFiles(bool returnBase64) async {
     try {
       FilePickerResult? result = await FilePicker.platform
           .pickFiles(allowMultiple: false, type: _pickingType, withData: true);
@@ -24,9 +24,15 @@ class ImageSelector {
       if (result != null) {
         PlatformFile file = result.files.first;
         Uint8List? bytes = file.bytes;
-        if (bytes != null) {
-          String base64String = base64Encode(bytes);
-          onImagePicked('data:image/${file.extension};base64,$base64String');
+        if (returnBase64) {
+          if (bytes != null) {
+            String base64String = base64Encode(bytes);
+            onImagePicked('data:image/${file.extension};base64,$base64String');
+          }
+        } else {
+          if (file.path?.isNotEmpty ?? false) {
+            onImagePicked(file.path!);
+          }
         }
       }
     } on PlatformException catch (e) {

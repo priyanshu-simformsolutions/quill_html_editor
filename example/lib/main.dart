@@ -110,6 +110,11 @@ class _MyAppState extends State<MyApp> {
                       color: Colors.black,
                     )),
               ],
+              onImagePicked: (imageFile) async {
+                debugPrint('my image path is ${imageFile.path}');
+                await Future.delayed(const Duration(seconds: 3)); // Upload to server and get URL
+                return 'https://www.21kschool.com/in/wp-content/uploads/sites/4/2022/09/How-Online-Education-is-Better-Than-Classroom-Education.jpg';
+              },
             ),
             Expanded(
               child: QuillHtmlEditor(

@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -247,30 +248,41 @@ class ToolBar extends StatefulWidget {
 
   final bool? _isScrollable;
 
+  /// [onImagePicked] method returns String, which has image path to
+  /// network/local,
+  /// it will give user a File which will be file for local cache folder,
+  /// user can use this file to upload image to their server or
+  /// store locally etc... according to their use case
+  /// Now it will be users responsibility to
+  /// return String which has path to image
+  /// which then we will embed and show in Editor
+  final Future<String> Function(File)? onImagePicked;
+
   ///[ToolBar] widget to show the quill
   /// The toolbar items will be auto aligned based on the screen's width or height
   /// The behaviour of the widget's alignment is similar to [Wrap] widget
 
-  ToolBar({
-    this.direction = Axis.horizontal,
-    this.alignment = WrapAlignment.start,
-    this.spacing = 0.0,
-    this.runAlignment = WrapAlignment.start,
-    this.runSpacing = 0.0,
-    this.crossAxisAlignment = WrapCrossAlignment.start,
-    this.textDirection,
-    this.verticalDirection = VerticalDirection.down,
-    this.clipBehavior = Clip.none,
-    this.toolBarConfig,
-    required this.controller,
-    this.customButtons,
-    this.padding,
-    this.iconSize = 25,
-    this.iconColor = Colors.black,
-    this.activeIconColor = Colors.blue,
-    this.toolBarColor = Colors.white,
-    this.mainAxisSize,
-  })  : assert(crossAxisAlignment is WrapCrossAlignment,
+  ToolBar(
+      {this.direction = Axis.horizontal,
+      this.alignment = WrapAlignment.start,
+      this.spacing = 0.0,
+      this.runAlignment = WrapAlignment.start,
+      this.runSpacing = 0.0,
+      this.crossAxisAlignment = WrapCrossAlignment.start,
+      this.textDirection,
+      this.verticalDirection = VerticalDirection.down,
+      this.clipBehavior = Clip.none,
+      this.toolBarConfig,
+      required this.controller,
+      this.customButtons,
+      this.padding,
+      this.iconSize = 25,
+      this.iconColor = Colors.black,
+      this.activeIconColor = Colors.blue,
+      this.toolBarColor = Colors.white,
+      this.mainAxisSize,
+      this.onImagePicked})
+      : assert(crossAxisAlignment is WrapCrossAlignment,
             "Please pass WrapCrossAlignment, instead of CrossAxisAlignment"),
         mainAxisAlignment = MainAxisAlignment.start,
         textBaseline = TextBaseline.alphabetic,
@@ -283,24 +295,25 @@ class ToolBar extends StatefulWidget {
   ///Please define the [direction], to make it a row or a column
   ///the direction defaults to [Axis.horizontal]
 
-  ToolBar.scroll({
-    this.direction = Axis.horizontal,
-    this.textDirection,
-    this.verticalDirection = VerticalDirection.down,
-    this.clipBehavior = Clip.none,
-    this.toolBarConfig,
-    required this.controller,
-    this.customButtons,
-    this.padding,
-    this.iconSize = 25,
-    this.iconColor = Colors.black,
-    this.activeIconColor = Colors.blue,
-    this.toolBarColor = Colors.white,
-    this.crossAxisAlignment = CrossAxisAlignment.start,
-    this.mainAxisAlignment = MainAxisAlignment.start,
-    this.mainAxisSize = MainAxisSize.min,
-    this.textBaseline = TextBaseline.alphabetic,
-  })  : assert(crossAxisAlignment is CrossAxisAlignment,
+  ToolBar.scroll(
+      {this.direction = Axis.horizontal,
+      this.textDirection,
+      this.verticalDirection = VerticalDirection.down,
+      this.clipBehavior = Clip.none,
+      this.toolBarConfig,
+      required this.controller,
+      this.customButtons,
+      this.padding,
+      this.iconSize = 25,
+      this.iconColor = Colors.black,
+      this.activeIconColor = Colors.blue,
+      this.toolBarColor = Colors.white,
+      this.crossAxisAlignment = CrossAxisAlignment.start,
+      this.mainAxisAlignment = MainAxisAlignment.start,
+      this.mainAxisSize = MainAxisSize.min,
+      this.textBaseline = TextBaseline.alphabetic,
+      this.onImagePicked})
+      : assert(crossAxisAlignment is CrossAxisAlignment,
             "Please pass CrossAxisAlignment, instead of WrapCrossAlignment"),
         spacing = 0.0,
         runSpacing = 0.0,
@@ -310,6 +323,7 @@ class ToolBar extends StatefulWidget {
         super(
           key: controller.toolBarKey,
         );
+
   @override
   State<ToolBar> createState() => ToolBarState();
 }
@@ -696,10 +710,20 @@ class ToolBarState extends State<ToolBar> {
                 } else if (toolbarItem.style == ToolBarStyle.redo) {
                   widget.controller.redo();
                 } else if (toolbarItem.style == ToolBarStyle.image) {
-                  await ImageSelector(onImagePicked: (value) {
-                    _formatMap['image'] = value;
-                    widget.controller.embedImage(value);
-                  }).pickFiles();
+                  final returnBase64 = widget.onImagePicked == null;
+                  await ImageSelector(
+                    onImagePicked: (value) async {
+                      if (returnBase64) {
+                        _formatMap['image'] = value;
+                        widget.controller.embedImage(value);
+                      } else {
+                        final imageFile = File(value);
+                        final path = await widget.onImagePicked!(imageFile);
+                        _formatMap['image'] = path;
+                        widget.controller.embedImage(path);
+                      }
+                    },
+                  ).pickFiles(returnBase64);
                 } else if (toolbarItem.style == ToolBarStyle.clean) {
                   List<ToolBarItem> tempList = [];
                   for (var value in _toolbarList) {
@@ -1273,83 +1297,63 @@ enum ToolBarStyle {
   bold("Bold"),
 
   /// [italic] sets italic format
-
   italic("Italic"),
 
   /// [underline] sets underline to text
-
   underline("Underline"),
 
   /// [strike] makes the selected text strikethrough
-
   strike("Strikethrough"),
 
   /// [blockQuote] converts text to quote
-
   blockQuote("Block Quote"),
 
   /// [codeBlock] makes selected text code block
-
   codeBlock("Code Block"),
 
   /// [indentMinus] decreases the indent by given value
-
   indentMinus("Decrease the indent"),
 
   /// [indentAdd] increases the indent by given value
-
   indentAdd("Increase the indent"),
 
   /// [directionRtl] sets the direction of text from Right to Left
-
   directionRtl("Right to Left"),
 
   /// [directionLtr] sets the direction of text from Left to Right
-
   directionLtr("Left to Right"),
 
   /// [headerOne] makes the text H1
-
   headerOne("Header H1"),
 
   /// [headerTwo] makes the text H2
-
   headerTwo("Header H2"),
 
   /// [color] sets font color
-
   color("Font color"),
 
   /// [background] sets background color to text
-
   background("Background color"),
 
   /// [align] adds alignment to text, left, right, center, justify
-
   align("Alignment"),
 
   /// [listOrdered] adds numbered/alphabets list to the text
-
   listOrdered("Bullet numbers"),
 
   /// [listBullet] makes text as bullet points
-
   listBullet("Bullet points"),
 
   /// [size] sets fontSize of the text
-
   size("Font Size"),
 
   /// [link] sets hyperlink to selected text
-
   link("Hyperlink"),
 
   /// [image] embeds image to the editor
-
   image("Insert image"),
 
   /// [video] embeds Youtube, Vimeo or other network videos to editor
-
   video("Insert Youtube/Url"),
 
   /// [clean] clears all formats of editor, (for internal use case)
